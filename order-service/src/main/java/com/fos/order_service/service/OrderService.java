@@ -19,7 +19,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
 
     public List<Order> getOrders(){
         return orderRepository.findAll();
@@ -29,11 +29,12 @@ public class OrderService {
     public void placeOrder(List<Order> orders){
 
         //check orders if in stock or not if in save if not save
+        WebClient webClient = webClientBuilder.build();
 
         for (Order order: orders){
 
             InventoryResponse response = webClient.get()
-                        .uri("http://localhost:8081/api/inventory/{productName}", order.getName())
+                        .uri("http://INVENTORY-SERVICE/api/inventory/{productName}", order.getName())
                         .retrieve()
                         .bodyToMono(InventoryResponse.class)
                         .block();
@@ -42,7 +43,7 @@ public class OrderService {
                 orderRepository.save(order);
 
                 webClient.put()
-                        .uri("http://localhost:8081/api/inventory/{productName}/decrease?quantity={quantity}",
+                        .uri("http://INVENTORY-SERVICE/api/inventory/{productName}/decrease?quantity={quantity}",
                         order.getName(), order.getQuantity())
                         .retrieve()
                         .bodyToMono(Void.class)
@@ -52,9 +53,5 @@ public class OrderService {
             }
             log.warn("Product '{}' is out of stock or insufficient quantity!", order.getName());
         }
-
-
     }
-
-    
 }
